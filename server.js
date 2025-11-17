@@ -33,13 +33,27 @@ const MODEL_NAME = 'gemini-2.5-flash';
 async function analyzeProgramWithGemini(programString) {
     
     const prompt = `
-   당신은 코드 분석 시스템입니다. 아래에 제공된 코드 파일을 분석하여 다음 5가지 질문에 대해 명확하게 답변하세요.
-    
-    1.  이 프로그램 코드에 **금융 사기(스캠) 또는 악성 코드** (데이터 탈취, 악성 URL 호출 등)가 포함되어 있습니까?
-    2.  이 코드 파일이 **구문적으로 유효한(valid) 코드**입니까?
-    3.  이 프로그램 코드에 **선정적인(suggestive/obscene) 문구**가 있습니까? (예: 변수명, 주석, 문자열)
-    4.  이 프로그램 코드는 **유저의 민감한 정보를 수집**합니까? (예: 개인 식별 정보, 금융 정보 등)
-    5.  이 프로그램 코드에 **논리적 오류** 또는 **주석/함수명과 실제 동작이 일치하지 않는 경우**가 있습니까? 
+   당신은 최고의 사이버 보안 분석가이자 숙련된 소프트웨어 아키텍트입니다.
+    당신의 임무는 제공된 코드 파일을 정밀하게 분석하여 잠재적인 보안 위협, 취약점, 악의적인 행위 및 코드 품질 문제를 식별하는 것입니다.
+    아래에 제공된 코드 파일을 분석하여 다음 6가지 핵심 영역에 대해 명확하게 답변하세요.
+    1.  **보안 위협 (Security Threats):**
+        * 금융 사기(스캠), 피싱, 랜섬웨어와 관련된 코드가 있습니까?
+        * 사용자 데이터를 외부 서버로 몰래 전송(data exfiltration)하려는 시도가 있습니까?
+        * 의심스러운 URL, IP 주소로의 네트워크 연결, 또는 난독화된 코드가 포함되어 있습니까?
+    2.  **주요 취약점 (Key Vulnerabilities):**
+        * SQL 인젝션, XSS(Cross-Site Scripting), OS 커맨드 인젝션과 같이 사용자 입력 검증이 누락되어 발생할 수 있는 취약점이 있습니까?
+        * API 키, 비밀번호, 인증 토큰 등이 코드 내에 하드코딩되어 있습니까?
+        * MD5, SHA1 등 취약한 암호화 알고리즘을 사용합니까?
+    3.  **데이터 프라이버시 (Data Privacy):**
+        * 개인 식별 정보(PII), 금융 정보, 위치 정보 등 유저의 민감한 정보를 수집합니까?
+        * 수집한다면, 해당 데이터를 암호화되지 않은 상태로 제3자에게 전송합니까?
+    4.  **코드 품질 및 논리 (Code Quality & Logic):**
+        * 주석이나 함수명과 실제 동작이 일치하지 않는 부분이 있습니까?
+        * 명백한 논리적 오류, 무한 루프 가능성, 또는 도달할 수 없는 '데드 코드(dead code)'가 있습니까?
+    5.  **부적절한 콘텐츠 (Inappropriate Content):**
+        * 변수명, 주석, 문자열 등에 선정적이거나 모욕적인(suggestive/obscene/offensive) 문구가 있습니까?
+    6.  **구문 유효성 (Syntax Validity):**
+        * 각 코드 파일이 해당 언어의 구문적으로 유효한(valid) 코드입니까?
 
     **답변은 반드시 한글로 Markdown 코드 블록 없이 순수한 JSON 객체(raw JSON object)로만 작성해 주세요.**
     
@@ -48,37 +62,44 @@ async function analyzeProgramWithGemini(programString) {
       "runId": "analysis-${new Date().toISOString().split('T')[0]}-XXXXXXXXX",
       "status": "SUCCESS" 또는 "ERROR",
       "processedAt": "${new Date().toISOString()}",
-      "finalDecision": "SCAM_DETECTED" 또는 "INVALID_FORMAT" 또는 "CONTENT_WARNING" 또는 "CLEAN",
-      "summary": "프로그램 전체에 대한 분석 결과를 요약합니다.",
+      "finalDecision": "CRITICAL_RISK" 또는 "SECURITY_WARNING" 또는 "CONTENT_WARNING" 또는 "INVALID_FORMAT" 또는 "CLEAN",
+      "summary": "프로그램 전체에 대한 분석 결과를 요약합니다. 가장 심각한 위험을 먼저 언급하세요.",
       "reportDetails": {
-        "scamCheck": {
+        "securityThreatCheck": {
           "detected": true 또는 false,
-          "issues": ["스캠/악성 코드 관련 문제점 또는 '없음'"]
+          "riskLevel": "높음" 또는 "중간" 또는 "낮음" 또는 "없음",
+          "issues": ["스캠, 피싱, 데이터 탈취, 악성 URL 등 위협 관련 문제점 또는 '없음'"]
         },
-        "validityCheck": {
+        "vulnerabilityCheck": {
+          "detected": true 또는 false,
+          "riskLevel": "높음" 또는 "중간" 또는 "낮음" 또는 "없음",
+          "issues": ["SQL 인젝션, XSS, 하드코딩된 비밀번호 등 취약점 관련 문제점 또는 '없음'"]
+        },
+        "privacyCheck": {
+          "riskLevel": "높음" 또는 "중간" 또는 "낮음" 또는 "없음",
+          "issues": ["민감 정보 수집, 제3자 전송 관련 문제점 또는 '없음'"]
+        },
+        "syntaxCheck": {
           "valid": true 또는 false,
           "issues": ["코드 구문 유효성 관련 문제점 또는 '모든 파일이 유효함'"]
         },
-        "sensationalCheck": {
+        "codeQualityCheck": {
           "detected": true 또는 false,
-          "issues": ["선정적인 문구 관련 문제점 또는 '없음'"]
+          "issues": ["논리적 오류, 주석 불일치, 데드 코드 등 관련 문제점 또는 '없음'"]
         },
-        "dataCollectionCheck": {
+        "contentCheck": {
           "detected": true 또는 false,
-          "issues": ["민감 정보 수집 관련 문제점 또는 '없음'"]
-        },
-        "logicCheck": {
-          "detected": true 또는 false,
-          "issues": ["논리적 오류 또는 코드 불일치 관련 문제점 또는 '없음'"]
+          "issues": ["선정적이거나 모욕적인 문구 관련 문제점 또는 '없음'"]
         }
       }
     }
     
     --- finalDecision 결정 로직 (필수) ---
-    1.  'scamCheck.detected'가 true이면 "SCAM_DETECTED"
-    2.  'validityCheck.valid'가 false이면 "INVALID_FORMAT"
-    3.  'sensationalCheck.detected'가 true이거나 'dataCollectionCheck.detected'가 true이거나 'logicCheck.detected'가 true이면 "CONTENT_WARNING"
-    4.  위 1, 2, 3에 해당하지 않고 모든 검사를 통과한 경우에만 "CLEAN"
+    1.  'securityThreatCheck.detected'가 true이거나 'vulnerabilityCheck.riskLevel'이 '높음'이면 "CRITICAL_RISK"
+    2.  'vulnerabilityCheck.detected'가 true (단, '높음'이 아님) 이거나 'privacyCheck.riskLevel'이 '높음' 또는 '중간'이면 "SECURITY_WARNING"
+    3.  'syntaxCheck.valid'가 false이면 "INVALID_FORMAT"
+    4.  'contentCheck.detected'가 true이거나 'codeQualityCheck.detected'가 true이거나 'privacyCheck.riskLevel'이 '낮음'이면 "CONTENT_WARNING"
+    5.  위 1, 2, 3, 4에 해당하지 않고 모든 검사를 통과한 경우에만 "CLEAN"
 
     --- 분석할 프로그램 코드 () ---
     ${programString} 
